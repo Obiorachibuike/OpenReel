@@ -1,0 +1,55 @@
+services:
+  db:
+    restart: unless-stopped
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: openreel
+      POSTGRES_USER: openreel
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copy .env.example to .env and set a password}
+    volumes: ["postgres:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openreel"]
+      interval: 5s
+      retries: 10
+  migrate:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.api
+    env_file: .env
+    depends_on:
+      db: {condition: service_healthy}
+    command: ["alembic", "upgrade", "head"]
+  api:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.api
+    env_file: .env
+    volumes: ["media:/data/media"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')"]
+      interval: 15s
+      retries: 5
+  worker:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.api
+    env_file: .env
+    command: ["python", "-m", "openreel.worker"]
+    volumes: ["media:/data/media"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  web:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.web
+    ports: ["3000:3000"]
+    depends_on:
+      api: {condition: service_healthy}
+volumes:
+  postgres:
+  media:

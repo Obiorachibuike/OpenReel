@@ -1,0 +1,11 @@
+FROM python:3.11-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY apps/api/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY apps/api/ .
+RUN useradd -m reel && mkdir -p /data/media && chown -R reel:reel /data
+USER reel
+ENV STORAGE_PATH=/data/media
+EXPOSE 8000
+CMD ["uvicorn", "openreel.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]

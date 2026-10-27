@@ -1,0 +1,1 @@
+{"name":"@openreel/sdk","version":"0.1.0","type":"module","main":"dist/index.js","types":"dist/index.d.ts","files":["dist"],"scripts":{"build":"tsc","typecheck":"tsc --noEmit","test":"npm run build && node --test test.mjs"},"devDependencies":{"typescript":"^5.9.3"}}
